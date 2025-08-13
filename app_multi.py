@@ -110,7 +110,9 @@ st.caption("Tips: HTTPSの本番URL（Streamlit Cloud）でカメラが動作し
 
 # ---------------- ② 回収情報の入力（手入力） ----------------
 st.subheader("② 回収情報の入力（手入力）")
-st.session_state["pickup_date"] = st.date_input("回収日", value=st.session_state["pickup_date"], key="pickup_date")
+
+# 回収日（値は st.session_state["pickup_date"] に自動で入る）
+st.date_input("回収日", key="pickup_date")
 
 st.subheader("② 回収倉庫（営業所）")
 WAREHOUSES = [
@@ -118,10 +120,20 @@ WAREHOUSES = [
     "西日本センター（大阪）", "九州センター（福岡）",
     "その他（手入力）",
 ]
-st.selectbox("倉庫を選択", options=WAREHOUSES, index=WAREHOUSES.index(st.session_state["warehouse_choice"]) if st.session_state["warehouse_choice"] in WAREHOUSES else 0, key="warehouse_choice")
+st.selectbox(
+    "倉庫を選択",
+    options=WAREHOUSES,
+    index=WAREHOUSES.index(st.session_state["warehouse_choice"]) if st.session_state["warehouse_choice"] in WAREHOUSES else 0,
+    key="warehouse_choice",
+)
 if st.session_state["warehouse_choice"] == "その他（手入力）":
     st.text_input("倉庫名を入力", key="warehouse_other")
-warehouse = st.session_state["warehouse_other"] if st.session_state["warehouse_choice"] == "その他（手入力）" else st.session_state["warehouse_choice"]
+
+warehouse = (
+    st.session_state["warehouse_other"]
+    if st.session_state["warehouse_choice"] == "その他（手入力）"
+    else st.session_state["warehouse_choice"]
+)
 
 st.text_input("メーカー", key="maker")
 st.text_input("型番", key="model")
