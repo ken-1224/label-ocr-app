@@ -12,7 +12,7 @@ st.title("📷 家電回収管理アプリ（カメラ対応）")
 
 # セッション状態（撮影データを保持）
 if "shots" not in st.session_state:
-    st.session_state["shots"] = []   # [{"img": PIL.Image, "ocr": "..."}, ...]
+    st.session_state["shots"] = []   # [{"img": PIL.Image, "ocr": "..."}]
 if "cam_key" not in st.session_state:
     st.session_state["cam_key"] = 0  # camera_input を再マウントするためのキー
 
@@ -62,7 +62,7 @@ def get_reader():
 
 reader = get_reader()
 
-# ---------------- ③ スマホのカメラから複数回撮影 ----------------
+# ---------------- ① スマホのカメラから複数回撮影 ----------------
 st.subheader("① ラベル撮影（必要なだけ複数回）")
 
 # カメラ入力（HTTPS 環境で動作／Streamlit Cloud の本番URL推奨）
@@ -109,38 +109,43 @@ if st.session_state["shots"]:
 
 st.caption("Tips: HTTPSの本番URL（Streamlit Cloud）でカメラが動作します。明るく、ラベルを画面いっぱい・真正面で撮影すると精度UP。")
 
-# ---------------- 入力フォーム ----------------
+# ---------------- ② 回収情報の入力（手入力） ----------------
 st.subheader("② 回収情報の入力（手入力）")
-回収日 = st.date_input("回収日", value=date.today())
-顧客名 = st.text_input("顧客名")
-住所 = st.text_input("住所")
-電話番号 = st.text_input("電話番号")
-家電種類 = st.text_input("家電種類")
-メーカー = st.text_input("メーカー")
-型番 = st.text_input("型番")
-状態 = st.text_input("状態")
-備考 = st.text_area("備考")
+pickup_date = st.date_input("回収日", value=date.today())
 
-# ---------------- スプレッドシート保存（A1:I1固定追記） ----------------
+st.subheader("② 回収倉庫（営業所）")  # ← 代入しない（見出しのみ表示）
+WAREHOUSES = [
+    "本社倉庫（東京）", "東日本センター（仙台）",
+    "西日本センター（大阪）", "九州センター（福岡）",
+    "その他（手入力）",
+]
+wh_choice = st.selectbox("倉庫を選択", options=WAREHOUSES, index=0)
+warehouse = wh_choice if wh_choice != "その他（手入力）" else st.text_input("倉庫名を入力", value="")
+
+maker = st.text_input("メーカー")
+model = st.text_input("型番")
+serial = st.text_input("製造番号")
+year = st.text_input("年式")
+note = st.text_area("備考")
+
+# ---------------- ③ スプレッドシート保存（A1:G1固定追記） ----------------
 st.subheader("③ スプレッドシート保存")
-can_save = sheet is not None and 回収日 and (顧客名 or メーカー or 型番)
+can_save = sheet is not None and pickup_date and (warehouse or maker or model)
 if st.button("スプレッドシートに保存", disabled=not can_save):
     try:
         payload = [
-            str(回収日),  # A: 回収日
-            顧客名,       # B
-            住所,         # C
-            電話番号,     # D
-            家電種類,     # E
-            メーカー,     # F
-            型番,         # G
-            状態,         # H
-            備考,         # I
+            str(pickup_date),  # A: 回収日
+            warehouse,         # B: 回収倉庫
+            maker,             # C: メーカー
+            model,             # D: 型番
+            serial,            # E: 製造番号
+            year,              # F: 年式
+            note,              # G: 備考
         ]
         sheet.append_row(
             payload,
             value_input_option="USER_ENTERED",
-            table_range="A1:I1",  # 常にA列〜I列に追記
+            table_range="A1:G1",  # ← 7列に合わせて修正
         )
         st.success("スプレッドシートに反映しました！")
         # 次の製品に備えてクリア（必要なら実施）
